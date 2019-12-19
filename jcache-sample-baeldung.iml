@@ -13,6 +13,8 @@
     <orderEntry type="library" scope="TEST" name="Maven: org.testng:testng:7.0.0" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: com.beust:jcommander:1.72" level="project" />
     <orderEntry type="library" name="Maven: javax.cache:cache-api:1.1.1" level="project" />
-    <orderEntry type="library" name="Maven: com.hazelcast:hazelcast:3.12.2" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.ignite:ignite-core:2.7.6" level="project" />
+    <orderEntry type="library" name="Maven: org.jetbrains:annotations:13.0" level="project" />
+    <orderEntry type="library" name="Maven: org.gridgain:ignite-shmem:1.0.0" level="project" />
   </component>
 </module>
