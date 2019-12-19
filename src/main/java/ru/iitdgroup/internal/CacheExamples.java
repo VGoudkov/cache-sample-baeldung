@@ -16,7 +16,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * Демонстратор работы с кэшом
  */
 @SuppressWarnings({"squid:S106"})
-public class App {
+public class CacheExamples {
     @SuppressWarnings({"squid:S2095"})
     public static void main(String[] args) {
         try (CachingProvider cachingProvider = Caching.getCachingProvider()) {

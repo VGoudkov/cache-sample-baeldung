@@ -5,9 +5,9 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertTrue;
 
 /**
- * Unit test for simple App.
+ * Unit test for simple CacheExamples.
  */
-public class AppTest 
+public class CacheExamplesTest
 {
     /**
      * Rigorous Test :-)
