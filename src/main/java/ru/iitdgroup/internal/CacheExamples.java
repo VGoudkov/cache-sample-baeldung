@@ -9,6 +9,7 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import javax.cache.spi.CachingProvider;
 import java.io.Serializable;
+import java.nio.file.Paths;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -17,17 +18,29 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 @SuppressWarnings({"squid:S106"})
 public class CacheExamples {
+
+    private final static String CACHE_NAME = "simpleCache";
+
     @SuppressWarnings({"squid:S2095"})
     public static void main(String[] args) {
+
+
         try (CachingProvider cachingProvider = Caching.getCachingProvider()) {
-            CacheManager cacheManager = cachingProvider.getCacheManager();
+            CacheManager cacheManager = getCacheManager(cachingProvider);
             MutableConfiguration<String, byte[]> config
                     = new MutableConfiguration<>();
-            Cache<String, byte[]> cache = cacheManager
-                    .createCache("simpleCache", config);
+
+
+            Cache<String, byte[]> cache;
+
+            cache = cacheManager.getCache(CACHE_NAME);
+
+            if (cache == null) {
+                cache = cacheManager.createCache(CACHE_NAME, config);
+            }
+
             cache.put("key1", "value1".getBytes(UTF_8));
             cache.put("key2", "value2".getBytes(UTF_8));
-
 
             EntryProcessor<String, byte[], byte[]> ep = new ByteEntryProcessor();
 
@@ -41,10 +54,21 @@ public class CacheExamples {
         }
     }
 
+
+    private static CacheManager getCacheManager(CachingProvider cachingProvider) {
+
+        // Get or create a cache manager.
+        CacheManager cacheMgr = Caching.getCachingProvider().getCacheManager(
+                Paths.get("client-config.xml").toUri(), null);
+
+        return cacheMgr;
+    }
+
     public static class ByteEntryProcessor implements EntryProcessor<String, byte[], byte[]>, Serializable {
         /**
          * Обработка одной записи или создание новой
-         * @param entry что получили из кэша
+         *
+         * @param entry     что получили из кэша
          * @param arguments byte[] один аргумент - новое значение
          * @return byte[] актуальное значение ключа
          * @throws EntryProcessorException в случае, если нужно создавать новую запись, а значение для неё не передали
