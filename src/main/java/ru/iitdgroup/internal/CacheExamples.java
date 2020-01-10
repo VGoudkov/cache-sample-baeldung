@@ -13,13 +13,34 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import javax.cache.spi.CachingProvider;
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Демонстратор работы с кэшом
+ *
+ * <p>Порядок запуска: 1 - Ignite Server, 2 - CacheExamplesTest</p>
+ *
+ * <p>Ожидаемый вывод при первом запуске (на пустых кэшах)</p>
+ * <li>Listener ->> created</li>
+ * <li>Listener ->> created</li>
+ * <li>------------- listing cache -----------------</li>
+ * <li>Listener ->> created</li>
+ * <li>key1 : value1</li>
+ * <li>key2 : value2</li>
+ * <li>key3 : New3</li>
+ * </p>
+ * <p></p>
+ * <p>Ожидаемый вывод при втором запуске (на заполненных кэшах)</p>
+ * <p>
+ * <li>Listener ->> Updated: key = key1, value = value1</li>
+ * <li>Listener ->> Updated: key = key2, value = value2</li>
+ * <li>------------- listing cache -----------------</li>
+ * <li>key1 : value1</li>
+ * <li>key2 : value2</li>
+ * <li>key3 : New3</li>
+ * </p>
  */
 @SuppressWarnings({"squid:S106"})
 public class CacheExamples {
@@ -64,9 +85,10 @@ public class CacheExamples {
 
     /**
      * Регистрация подписчика на события в кэше
+     *
      * @param cache кэш, для которого регистрировать
      */
-    private static void registerListener(Cache<String,byte[]> cache) {
+    private static void registerListener(Cache<String, byte[]> cache) {
         // create the EntryListener
         //ByteEntryUpdateListener clientListener = new ByteEntryUpdateListener();
 
@@ -125,13 +147,13 @@ public class CacheExamples {
         }
     }
 
-    public static class ByteEntryUpdateListener implements CacheEntryUpdatedListener<String, byte[]>, CacheEntryCreatedListener<String,byte[]> {
+    public static class ByteEntryUpdateListener implements CacheEntryUpdatedListener<String, byte[]>, CacheEntryCreatedListener<String, byte[]> {
         @Override
         public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends byte[]>> cacheEntryEvents) throws CacheEntryListenerException {
             for (CacheEntryEvent<? extends String, ? extends byte[]> event : cacheEntryEvents) {
                 System.out.println(String.format("Listener ->> Updated: key = %s, value = %s",
                         event.getKey(),
-                        new String( event.getValue(), UTF_8)));
+                        new String(event.getValue(), UTF_8)));
             }
         }
 
