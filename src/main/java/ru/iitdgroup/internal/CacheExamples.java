@@ -8,6 +8,8 @@ import javax.cache.event.CacheEntryCreatedListener;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriter;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessor;
@@ -17,6 +19,8 @@ import javax.cache.spi.CachingProvider;
 import java.io.Serializable;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -60,8 +64,13 @@ public class CacheExamples {
                     = new MutableConfiguration<>();
 
 
-            config.setCacheWriterFactory(FactoryBuilder.factoryOf(ByteEntryCacheWriter.class));
-            config.setWriteThrough(true);
+            config
+                    .setWriteThrough(true)
+                    .setCacheWriterFactory(FactoryBuilder.factoryOf(ByteEntryCacheWriter.class))
+                    .setReadThrough(true)
+                    .setCacheLoaderFactory(FactoryBuilder.factoryOf(ByteEntryCacheLoader.class))
+            ;
+
 
             Cache<String, byte[]> cache;
 
@@ -73,6 +82,12 @@ public class CacheExamples {
 
 
             registerListener(cache);
+
+            final String nonExustentKey = "NON - Exstent key";
+            final byte[] data = cache.get(nonExustentKey);
+            System.out.println(String.format("Getting non-existent cache entry: key %s, value: %s",
+                    nonExustentKey,
+                    new String(data==null?"NULL".getBytes(UTF_8):data, UTF_8)));
 
             cache.put("key1", "value1".getBytes(UTF_8));
             cache.put("key2", "value2".getBytes(UTF_8));
@@ -106,9 +121,6 @@ public class CacheExamples {
         // register it to the cache at run-time
         cache.registerCacheEntryListener(conf);
 
-
-
-
     }
 
 
@@ -121,6 +133,10 @@ public class CacheExamples {
         return cacheMgr;
     }
 
+    /**
+     * Класс для обработки записей на стороне сервера кэша.
+     * <p>Сериализуется и уезжает работать на стороне сервера!</p>
+     */
     public static class ByteEntryProcessor implements EntryProcessor<String, byte[], byte[]>, Serializable {
         /**
          * Обработка одной записи или создание новой
@@ -157,6 +173,10 @@ public class CacheExamples {
         }
     }
 
+    /**
+     * Класс для обработки событий изменения записей в кэше.
+     * <p>Работает ТОЛЬКО на get/put/... и НЕ вызывается при обработке с помощью Entry processor</p>
+     */
     public static class ByteEntryUpdateListener implements CacheEntryUpdatedListener<String, byte[]>, CacheEntryCreatedListener<String, byte[]> {
         @Override
         public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends byte[]>> cacheEntryEvents) throws CacheEntryListenerException {
@@ -175,6 +195,10 @@ public class CacheExamples {
         }
     }
 
+    /**
+     * Вспомогательная фабрика для создания класса с методами подписки на события кэша.
+     * FIXME: возможно, что-то сделано не так с точки зрения логики javax.cache и этого вообше не должно быть
+     */
     public static class LoggingEntryListenerFactory implements Factory<ByteEntryUpdateListener> {
         @Override
         public ByteEntryUpdateListener create() {
@@ -183,6 +207,10 @@ public class CacheExamples {
     }
 
 
+    /**
+     * Реализация методов сохранения кэша на диск.
+     * <p>Работает на стороне сервера</p>
+     */
     public static class ByteEntryCacheWriter implements CacheWriter<String, byte[]> {
         @Override
         public void write(Cache.Entry<? extends String, ? extends byte[]> entry) throws CacheWriterException {
@@ -197,12 +225,48 @@ public class CacheExamples {
 
         @Override
         public void delete(Object key) throws CacheWriterException {
-            System.out.println(String.format("Cache writer ->> delete key: %s",key));
+            System.out.println(String.format("Cache writer ->> delete key: %s", key));
         }
 
         @Override
         public void deleteAll(Collection<?> keys) throws CacheWriterException {
             System.out.println("Cache writer ->> delete all");
+        }
+    }
+
+
+    /**
+     * Реализация методов загрузки кэша с диска
+     */
+    public static class ByteEntryCacheLoader implements CacheLoader<String, byte[]> {
+        @Override
+        public byte[] load(String key) throws CacheLoaderException {
+            return getDataFromDB(key);
+        }
+
+        public ByteEntryCacheLoader() {
+            System.out.println( this.getClass().getSimpleName()+" created");
+        }
+
+        @Override
+        public Map<String, byte[]> loadAll(Iterable<? extends String> keys) throws CacheLoaderException {
+            System.out.println("Cache loader ->> load data for all keys");
+            Map<String, byte[]> ret = new HashMap<>();
+            for (String key : keys) {
+                ret.put(key, getDataFromDB(key));
+            }
+            return ret;
+        }
+
+        /**
+         * Метод - имитатор загрузки данных из внешней СУБД
+         *
+         * @param key - ключ
+         * @return данные с диска - фиксированная строка DB data for key + значение ключа
+         */
+        private byte[] getDataFromDB(String key) {
+            System.out.println(String.format("Cache loader ->> load data for key %s", key));
+            return (String.format("DB data for key %s", key)).getBytes(UTF_8);
         }
     }
 
