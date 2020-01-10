@@ -3,12 +3,17 @@ package ru.iitdgroup.internal;
 import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
-import javax.cache.configuration.MutableConfiguration;
+import javax.cache.configuration.*;
+import javax.cache.event.CacheEntryCreatedListener;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import javax.cache.spi.CachingProvider;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -39,6 +44,9 @@ public class CacheExamples {
                 cache = cacheManager.createCache(CACHE_NAME, config);
             }
 
+
+            registerListener(cache);
+
             cache.put("key1", "value1".getBytes(UTF_8));
             cache.put("key2", "value2".getBytes(UTF_8));
 
@@ -52,6 +60,23 @@ public class CacheExamples {
             System.out.println("\n\n\n------------- listing cache -----------------");
             cache.forEach(entry -> System.out.println(entry.getKey() + " : " + new String(entry.getValue())));
         }
+    }
+
+    /**
+     * Регистрация подписчика на события в кэше
+     * @param cache кэш, для которого регистрировать
+     */
+    private static void registerListener(Cache<String,byte[]> cache) {
+        // create the EntryListener
+        //ByteEntryUpdateListener clientListener = new ByteEntryUpdateListener();
+
+        // using our listener, let's create a configuration
+        CacheEntryListenerConfiguration<String, byte[]> conf = new MutableCacheEntryListenerConfiguration<>(
+                FactoryBuilder.factoryOf(ByteEntryUpdateListener.class),
+                null, true, false);
+
+        // register it to the cache at run-time
+        cache.registerCacheEntryListener(conf);
     }
 
 
@@ -99,4 +124,30 @@ public class CacheExamples {
             return valueBytes;
         }
     }
+
+    public static class ByteEntryUpdateListener implements CacheEntryUpdatedListener<String, byte[]>, CacheEntryCreatedListener<String,byte[]> {
+        @Override
+        public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends byte[]>> cacheEntryEvents) throws CacheEntryListenerException {
+            for (CacheEntryEvent<? extends String, ? extends byte[]> event : cacheEntryEvents) {
+                System.out.println(String.format("Listener ->> Updated: key = %s, value = %s",
+                        event.getKey(),
+                        new String( event.getValue(), UTF_8)));
+            }
+        }
+
+        @Override
+        public void onCreated(Iterable<CacheEntryEvent<? extends String, ? extends byte[]>> cacheEntryEvents) throws CacheEntryListenerException {
+            for (CacheEntryEvent<? extends String, ? extends byte[]> event : cacheEntryEvents) {
+                System.out.println("Listener ->> created");
+            }
+        }
+    }
+
+    public static class LoggingEntryListenerFactory implements Factory<ByteEntryUpdateListener> {
+        @Override
+        public ByteEntryUpdateListener create() {
+            return new ByteEntryUpdateListener();
+        }
+    }
+
 }
