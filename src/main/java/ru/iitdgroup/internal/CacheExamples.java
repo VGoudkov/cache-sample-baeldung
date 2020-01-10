@@ -8,12 +8,15 @@ import javax.cache.event.CacheEntryCreatedListener;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.integration.CacheWriter;
+import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import javax.cache.spi.CachingProvider;
 import java.io.Serializable;
 import java.nio.file.Paths;
+import java.util.Collection;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -57,6 +60,9 @@ public class CacheExamples {
                     = new MutableConfiguration<>();
 
 
+            config.setCacheWriterFactory(FactoryBuilder.factoryOf(ByteEntryCacheWriter.class));
+            config.setWriteThrough(true);
+
             Cache<String, byte[]> cache;
 
             cache = cacheManager.getCache(CACHE_NAME);
@@ -99,6 +105,10 @@ public class CacheExamples {
 
         // register it to the cache at run-time
         cache.registerCacheEntryListener(conf);
+
+
+
+
     }
 
 
@@ -169,6 +179,30 @@ public class CacheExamples {
         @Override
         public ByteEntryUpdateListener create() {
             return new ByteEntryUpdateListener();
+        }
+    }
+
+
+    public static class ByteEntryCacheWriter implements CacheWriter<String, byte[]> {
+        @Override
+        public void write(Cache.Entry<? extends String, ? extends byte[]> entry) throws CacheWriterException {
+            System.out.println(String.format("Cache writer ->> write, key: %s, value: %s",
+                    entry.getKey(), new String(entry.getValue(), UTF_8)));
+        }
+
+        @Override
+        public void writeAll(Collection<Cache.Entry<? extends String, ? extends byte[]>> entries) throws CacheWriterException {
+            System.out.println("Cache writer ->> Write all");
+        }
+
+        @Override
+        public void delete(Object key) throws CacheWriterException {
+            System.out.println(String.format("Cache writer ->> delete key: %s",key));
+        }
+
+        @Override
+        public void deleteAll(Collection<?> keys) throws CacheWriterException {
+            System.out.println("Cache writer ->> delete all");
         }
     }
 
