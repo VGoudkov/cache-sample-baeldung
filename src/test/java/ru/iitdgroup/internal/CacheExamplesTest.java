@@ -7,14 +7,12 @@ import static org.testng.Assert.assertTrue;
 /**
  * Unit test for simple CacheExamples.
  */
-public class CacheExamplesTest
-{
+public class CacheExamplesTest {
     /**
      * Rigorous Test :-)
      */
     @Test
-    public void shouldAnswerWithTrue()
-    {
-        assertTrue( true );
+    public void shouldAnswerWithTrue() {
+        assertTrue(true);
     }
 }

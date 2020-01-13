@@ -4,7 +4,6 @@ import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
-import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder.SingletonFactory;
 import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
 import javax.cache.configuration.MutableConfiguration;
@@ -64,7 +63,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * App ->> registerListener
  * ByteEntryUpdateListener created
  *
- * App ->> cheking non - existent key
+ * App ->> checking non - existent key
  * App -->> Getting non-existent cache entry: key NON_EXISTENT_KEY, value: DB data for key NON_EXISTENT_KEY
  *
  * App ->> putting two keys
@@ -99,7 +98,7 @@ public class CacheExamples {
 
 
         try (CachingProvider cachingProvider = Caching.getCachingProvider()) {
-            CacheManager cacheManager = getCacheManager(cachingProvider);
+            CacheManager cacheManager = getCacheManager();
             MutableConfiguration<String, byte[]> config
                     = new MutableConfiguration<>();
 
@@ -125,11 +124,11 @@ public class CacheExamples {
             System.out.println("\nApp ->> registerListener");
             registerListener(cache);
 
-            System.out.println("\nApp ->> cheking non - existent key");
-            final String nonExustentKey = "NON_EXISTENT_KEY";
-            final byte[] data = cache.get(nonExustentKey);
+            System.out.println("\nApp ->> checking non - existent key");
+            final String nonExistentKey = "NON_EXISTENT_KEY";
+            final byte[] data = cache.get(nonExistentKey);
             System.out.println(String.format("App -->> Getting non-existent cache entry: key %s, value: %s",
-                    nonExustentKey,
+                    nonExistentKey,
                     new String(data == null ? "NULL".getBytes(UTF_8) : data, UTF_8)));
 
             System.out.println("\nApp ->> putting two keys");
@@ -141,10 +140,13 @@ public class CacheExamples {
 
             //FIXME: тут нужно бы открыть баг в IDEA - противоречащие хинты
             System.out.println("\nApp ->> processing existing keys");
+            //noinspection RedundantCast
             cache.invoke("key1", ep, (Object) "New App data for key 1".getBytes(UTF_8));
+            //noinspection RedundantCast
             cache.invoke("key2", ep, (Object) "New App data for key 2".getBytes(UTF_8));
 
             System.out.println("\nApp ->> processing new key");
+            //noinspection RedundantCast
             cache.invoke("NEW_KEY", ep, (Object) "New App data for key NEW_KEY".getBytes(UTF_8));
 
             System.out.println("\nApp ->> listing cache");
@@ -171,15 +173,6 @@ public class CacheExamples {
 
     }
 
-
-    private static CacheManager getCacheManager(CachingProvider cachingProvider) {
-        // Get or create a cache manager.
-        CacheManager cacheMgr = Caching.getCachingProvider().getCacheManager(
-                Paths.get("client-config.xml").toUri(), null);
-
-        return cacheMgr;
-    }
-
     /**
      * Класс для обработки записей на стороне сервера кэша.
      * <p>Сериализуется и уезжает работать на стороне сервера!</p>
@@ -200,7 +193,7 @@ public class CacheExamples {
         @Override
         public byte[] process(MutableEntry<String, byte[]> entry, Object... arguments) throws EntryProcessorException {
             System.out.println("Processing key: " + entry.getKey());
-            String newValue = null;
+            String newValue;
             if (arguments.length > 0 && arguments[0].getClass() == byte[].class) {
                 newValue = new String((byte[]) arguments[0]);
                 System.out.println("byte arr arg: " + newValue);
@@ -212,15 +205,11 @@ public class CacheExamples {
             byte[] valueBytes = entry.getValue();
             if (valueBytes == null) {
                 //нет такого ключа: делаем новый
-                if (newValue != null) {
-                    System.out.println("Creating new key");
-                    valueBytes = newValue.getBytes(UTF_8);
-                    entry.setValue(valueBytes);
-                } else {
-                    throw new EntryProcessorException("Null key and no new key value provided");
-                }
-            }else {
-                entry.setValue( newValue.getBytes());
+                System.out.println("Creating new key");
+                valueBytes = newValue.getBytes(UTF_8);
+                entry.setValue(valueBytes);
+            } else {
+                entry.setValue(newValue.getBytes());
             }
             System.out.println("Processed value: " + new String(valueBytes));
             return valueBytes;
@@ -255,18 +244,6 @@ public class CacheExamples {
     }
 
     /**
-     * Вспомогательная фабрика для создания класса с методами подписки на события кэша.
-     * FIXME: возможно, что-то сделано не так с точки зрения логики javax.cache и этого вообше не должно быть
-     */
-    public static class LoggingEntryListenerFactory implements Factory<ByteEntryUpdateListener> {
-        @Override
-        public ByteEntryUpdateListener create() {
-            return new ByteEntryUpdateListener();
-        }
-    }
-
-
-    /**
      * Реализация методов сохранения кэша на диск.
      * <p>Работает на стороне сервера</p>
      */
@@ -297,11 +274,10 @@ public class CacheExamples {
         }
     }
 
-
     /**
      * Реализация методов загрузки кэша с диска
      */
-    public static class ByteEntryCacheLoader implements CacheLoader<String, byte[]>, Serializable{
+    public static class ByteEntryCacheLoader implements CacheLoader<String, byte[]>, Serializable {
         public ByteEntryCacheLoader() {
             System.out.println(this.getClass().getSimpleName() + " created");
         }
@@ -333,7 +309,7 @@ public class CacheExamples {
         }
     }
 
-    public static class SerializableSingletonFactory<T> extends SingletonFactory<T> implements Serializable{
+    public static class SerializableSingletonFactory<T> extends SingletonFactory<T> implements Serializable {
 
         /**
          * Constructor for the {@link SingletonFactory}.
@@ -343,6 +319,13 @@ public class CacheExamples {
         public SerializableSingletonFactory(T instance) {
             super(instance);
         }
+    }
+
+    private static CacheManager getCacheManager() {
+        // Get or create a cache manager.
+
+        return Caching.getCachingProvider().getCacheManager(
+                Paths.get("client-config.xml").toUri(), null);
     }
 
 }
