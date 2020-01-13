@@ -84,7 +84,7 @@ public class CacheExamples {
             if (cache == null) {
                 cache = cacheManager.createCache(CACHE_NAME, config);
             }
-
+            cache.clear();
 
             System.out.println("\nApp ->> registerListener");
             registerListener(cache);
@@ -105,11 +105,11 @@ public class CacheExamples {
 
             //FIXME: тут нужно бы открыть баг в IDEA - противоречащие хинты
             System.out.println("\nApp ->> processing existing keys");
-            cache.invoke("key1", ep, (Object) "New1".getBytes(UTF_8));
-            cache.invoke("key2", ep, (Object) "New2".getBytes(UTF_8));
+            cache.invoke("key1", ep, (Object) "New App data for key 1".getBytes(UTF_8));
+            cache.invoke("key2", ep, (Object) "New App data for key 2".getBytes(UTF_8));
 
-            System.out.println("\nApp ->> processing new (non-existing) key");
-            cache.invoke("key3", ep, (Object) "New3".getBytes(UTF_8));
+            System.out.println("\nApp ->> processing new key");
+            cache.invoke("NEW_KEY", ep, (Object) "New App data for key NEW_KEY".getBytes(UTF_8));
 
             System.out.println("\nApp ->> listing cache");
             cache.forEach(entry -> System.out.println(entry.getKey() + " : " + new String(entry.getValue())));
@@ -170,6 +170,7 @@ public class CacheExamples {
                 System.out.println("byte arr arg: " + newValue);
             } else {
                 System.out.println(arguments.length > 0 ? "unknown arg(s)" : "no args");
+                return null;
             }
 
             byte[] valueBytes = entry.getValue();
@@ -182,6 +183,8 @@ public class CacheExamples {
                 } else {
                     throw new EntryProcessorException("Null key and no new key value provided");
                 }
+            }else {
+                entry.setValue( newValue.getBytes());
             }
             System.out.println("Processed value: " + new String(valueBytes));
             return valueBytes;
