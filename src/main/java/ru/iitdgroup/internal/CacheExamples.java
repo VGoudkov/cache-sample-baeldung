@@ -32,25 +32,61 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * Демонстратор работы с кэшом
  *
  * <p>Порядок запуска: 1 - Ignite Server, 2 - CacheExamplesTest</p>
- *
- * <p>Ожидаемый вывод при первом запуске (на пустых кэшах)</p>
- * <li>Listener ->> created</li>
- * <li>Listener ->> created</li>
- * <li>------------- listing cache -----------------</li>
- * <li>Listener ->> created</li>
- * <li>key1 : value1</li>
- * <li>key2 : value2</li>
- * <li>key3 : New3</li>
- * </p>
- * <p></p>
- * <p>Ожидаемый вывод при втором запуске (на заполненных кэшах)</p>
  * <p>
- * <li>Listener ->> Updated: key = key1, value = value1</li>
- * <li>Listener ->> Updated: key = key2, value = value2</li>
- * <li>------------- listing cache -----------------</li>
- * <li>key1 : value1</li>
- * <li>key2 : value2</li>
- * <li>key3 : New3</li>
+ * <li><ul>Server output</ul></li>
+ * <pre>
+ *  Cache loader ->> load data for key NON_EXISTENT_KEY
+ *  Cache writer ->> write, key: key1, value: value1
+ *  Cache writer ->> write, key: key2, value: value2
+ *  Processing key: key1
+ *  byte arr arg: New App data for key 1
+ *  Processed value: value1
+ *  Cache writer ->> write, key: key1, value: New App data for key 1
+ *  Processing key: key2
+ *  byte arr arg: New App data for key 2
+ *  Processed value: value2
+ *  Cache writer ->> write, key: key2, value: New App data for key 2
+ *  Cache loader ->> load data for key NEW_KEY
+ *  Processing key: NEW_KEY
+ *  byte arr arg: New App data for key NEW_KEY
+ *  Processed value: DB data for key NEW_KEY
+ *  Cache writer ->> write, key: NEW_KEY, value: New App data for key NEW_KEY
+ *  </pre>
+ * </p>
+ * <p>
+ * <li><ul>Client output</ul></li>
+ * <pre>
+ * ByteEntryCacheLoader created
+ * ByteEntryCacheWriter created
+ *
+ * App ->> createCache
+ *
+ * App ->> registerListener
+ * ByteEntryUpdateListener created
+ *
+ * App ->> cheking non - existent key
+ * App -->> Getting non-existent cache entry: key NON_EXISTENT_KEY, value: DB data for key NON_EXISTENT_KEY
+ *
+ * App ->> putting two keys
+ *
+ * App ->> creating entry processor
+ * ByteEntryProcessor created
+ *
+ * App ->> processing existing keys
+ * Listener ->> created key key1, value value1
+ * Listener ->> created key key2, value value2
+ * Listener ->> Updated: key = key1, value = New App data for key 1
+ *
+ * App ->> processing new key
+ * Listener ->> Updated: key = key2, value = New App data for key 2
+ *
+ * App ->> listing cache
+ * Listener ->> created key NEW_KEY, value New App data for key NEW_KEY
+ * key1 : New App data for key 1
+ * key2 : New App data for key 2
+ * NON_EXISTENT_KEY : DB data for key NON_EXISTENT_KEY
+ * NEW_KEY : New App data for key NEW_KEY
+ * </pre>
  * </p>
  */
 @SuppressWarnings({"squid:S106"})
