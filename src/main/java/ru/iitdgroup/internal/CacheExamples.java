@@ -129,6 +129,7 @@ public class CacheExamples {
                 listenerFactory,
                 null, true, false);
 
+
         // register it to the cache at run-time
         cache.registerCacheEntryListener(conf);
 
@@ -261,7 +262,7 @@ public class CacheExamples {
     /**
      * Реализация методов загрузки кэша с диска
      */
-    public static class ByteEntryCacheLoader implements CacheLoader<String, byte[]> {
+    public static class ByteEntryCacheLoader implements CacheLoader<String, byte[]>, Serializable{
         public ByteEntryCacheLoader() {
             System.out.println(this.getClass().getSimpleName() + " created");
         }
